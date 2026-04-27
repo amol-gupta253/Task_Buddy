@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Task Manager</title>
+
+<style>
+body {
+  font-family: Arial;
+  background: linear-gradient(to right, #74ebd5, #9face6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+}
+
+.container {
+  width: 520px;
+  background: white;
+  padding: 30px;
+  border-radius: 15px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+  text-align: center;
+}
+
+input, select {
+  padding: 10px;
+  margin: 8px;
+}
+
+button {
+  padding: 10px;
+  margin: 5px;
+  background: #6c63ff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+}
+
+.filter-btn { background: #444; }
+
+ul {
+  list-style: none;
+  padding: 0;
+}
+
+li {
+  background: #f9f9f9;
+  margin: 10px 0;
+  padding: 12px;
+  border-radius: 10px;
+}
+
+.completed {
+  text-decoration: line-through;
+  color: gray;
+}
+
+.high { border-left: 6px solid red; }
+.medium { border-left: 6px solid orange; }
+.low { border-left: 6px solid green; }
+
+.task-box {
+  display: flex;
+  justify-content: space-between;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+  <h2>✨ My Task Manager</h2>
+
+  <input type="text" id="taskInput" placeholder="Enter task">
+
+  <p><b>Priority</b></p>
+
+  <select id="priority">
+    <option>Low</option>
+    <option>Medium</option>
+    <option>High</option>
+  </select>
+
+  <br>
+
+  <button type="button" onclick="addTask()">Add Task</button>
+
+  <br>
+
+  <button class="filter-btn" onclick="setFilter('all')">All</button>
+  <button class="filter-btn" onclick="setFilter('completed')">Completed</button>
+  <button class="filter-btn" onclick="setFilter('pending')">Pending</button>
+
+  <ul id="list"></ul>
+</div>
+
+<script>
+
+var tasks = JSON.parse(localStorage.getItem("tasks") || "[]");
+var currentFilter = "all";
+
+function saveData() {
+  localStorage.setItem("tasks", JSON.stringify(tasks));
+}
+
+function addTask() {
+  var input = document.getElementById("taskInput");
+  var priority = document.getElementById("priority").value;
+
+  if (input.value.trim() == "") {
+    alert("Enter something");
+    return;
+  }
+
+  tasks.push({
+    text: input.value,
+    done: false,
+    priority: priority
+  });
+
+  input.value = "";
+  saveData();
+  showTasks();
+}
+
+function setFilter(type) {
+  currentFilter = type;
+  showTasks();
+}
+
+function showTasks() {
+
+  // priority sort
+  tasks.sort(function(a, b) {
+    var order = { High: 1, Medium: 2, Low: 3 };
+    return order[a.priority] - order[b.priority];
+  });
+
+  var list = document.getElementById("list");
+  list.innerHTML = "";
+
+  var visibleCount = 0;
+
+  for (var i = 0; i < tasks.length; i++) {
+
+    // 🔥 ALL tab → sirf pending dikhana
+    if (currentFilter == "all" && tasks[i].done) continue;
+
+    if (currentFilter == "completed" && !tasks[i].done) continue;
+    if (currentFilter == "pending" && tasks[i].done) continue;
+
+    visibleCount++;
+
+    var li = document.createElement("li");
+
+    li.className = tasks[i].priority.toLowerCase();
+    if (tasks[i].done) li.className += " completed";
+
+    li.innerHTML = `
+      <div class="task-box">
+        <span>${tasks[i].text} (${tasks[i].priority})</span>
+        <div>
+          ${!tasks[i].done ? `<button onclick="markDone(${i})">Done</button>` : ""}
+          <button onclick="deleteTask(${i})">X</button>
+        </div>
+      </div>
+    `;
+
+    list.appendChild(li);
+  }
+
+  // 🔥 Empty messages
+  if (visibleCount === 0) {
+    var msg = document.createElement("p");
+
+    if (currentFilter == "completed") {
+      msg.innerText = "No task completed";
+    } else if (currentFilter == "pending" || currentFilter == "all") {
+      msg.innerText = "No task pending";
+    }
+
+    list.appendChild(msg);
+  }
+}
+
+function markDone(index) {
+  tasks[index].done = true;
+  saveData();
+  showTasks();
+}
+
+function deleteTask(index) {
+  tasks.splice(index, 1);
+  saveData();
+  showTasks();
+}
+
+showTasks();
+
+</script>
+
+</body>
+</html>
